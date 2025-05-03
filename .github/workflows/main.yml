@@ -1,0 +1,40 @@
+name: SolutionGTK - CI/CD Deploy to Replit
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Build (if exists)
+        run: |
+          if [ -f package.json ] && grep -q '"build"' package.json; then
+            npm run build
+          else
+            echo "No build script found. Skipping build."
+          fi
+
+      - name: Deploy to Replit via Webhook
+        env:
+          REPLIT_HOOK: ${{ secrets.REPLIT_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$REPLIT_HOOK" ]; then
+            echo "Missing REPLIT_DEPLOY_HOOK secret!"
+            exit 1
+          fi
+          curl -X POST "$REPLIT_HOOK"
